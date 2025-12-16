@@ -1,0 +1,270 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+|       ______          _   __           ______                               |
+|      / ____/  ___    / | / /          / ____/  ____   ____ _   ____ ___     |
+|     / / __   / _ \  /  |/ /  ______  / /_     / __ \ / __ `/  / __ `__ \    |
+|    / /_/ /  /  __/ / /|  /  /_____/ / __/    / /_/ // /_/ /  / / / / / /    |
+|    \____/   \___/ /_/ |_/          /_/       \____/ \__,_/  /_/ /_/ /_/     |
+|    Copyright (C) 2015 - 2022 EPFL                                           |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      functions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// This dictionary is a set of functions to evaluate quantities of interest.
+// It can be also used using `postProcess` utility. Problems with running these
+// functions while the simulation runs in parallel have been encountered.
+// Using these functions on a reconstructed case works as expected.
+
+functions
+{
+    // --- Integral Neutron flux
+    volNeutroFlux_Salt
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        fields          (oneGroupFlux);
+        operation       volIntegrate;
+        region          neutroRegion;
+        regionType      cellZone;
+        name            Salt;
+        log             false; // true;
+        writeFields     false; // true;
+        writeControl    onEnd;
+        writeInterval   1;
+        scaleFactor     1.0; // Fuel fraction ?????
+    }
+    
+    volNeutroFlux_group0_Salt
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        fields          (flux1);
+        operation       volIntegrate;
+        region          neutroRegion;
+        regionType      cellZone;
+        name            Salt;
+        log             true;
+        writeFields     true;
+        writeControl    writeTime;
+        scaleFactor     1.0;
+    }
+
+    volNeutroFlux_group1_Salt
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        fields          (flux0);
+        operation       volIntegrate;
+        region          neutroRegion;
+        regionType      cellZone;
+        name            Salt;
+        log             true;
+        writeFields     true;
+        writeControl    writeTime;
+        scaleFactor     1.0;
+    }
+    volNeutroFlux_Graphite
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        fields          (oneGroupFlux);
+        operation       volIntegrate;
+        region          neutroRegion;
+        regionType      cellZone;
+        name            Graphite;
+        log             false; // true;
+        writeFields     false; // true;
+        writeControl    onEnd;
+        writeInterval   1;
+        scaleFactor     1.0; // Fuel fraction ?????
+    }
+    
+    volNeutroFlux_group0_Graphite
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        fields          (flux1);
+        operation       volIntegrate;
+        region          neutroRegion;
+        regionType      cellZone;
+        name            Graphite;
+        log             true;
+        writeFields     true;
+        writeControl    writeTime;
+        scaleFactor     1.0;
+    }
+
+    volNeutroFlux_group1_Graphite
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        fields          (flux0);
+        operation       volIntegrate;
+        region          neutroRegion;
+        regionType      cellZone;
+        name            Graphite;
+        log             true;
+        writeFields     true;
+        writeControl    writeTime;
+        scaleFactor     1.0;
+    }
+
+    reactionRates
+    {
+        //  This function calculates reaction rates. It was implemented for 
+        //  diffusion neutronics        //
+        //
+        //  Fission rate is calculated as:
+        //
+        //       \nu \Sigma_{f,g} \phi_g
+        // 
+        //  The removal/disappearance (absorption) rate is defined as:
+        //  NOTE: THIS IS REMOVAL RATE, NOT THE ABSORPTION. THE ACTUAL ABSORPTION 
+        //  RATE MUST BE DERIVED. AT THIS MOMENT IT CAN BE NEGLECTED
+        //
+        //      \Sigma_{r,g} \phi_g
+        //
+        //  A scattering rate within the same group is considered, which is
+        //  defined as:
+        //
+        //      \\ NO IDEA
+        //      
+        //      in calcScatteringSourceAdjoint.H: sigmaFromTo[energyI][energyJ] * flux_[energyJ]
+        //
+
+        name          reactionRates;
+        type          coded;
+        libs          (utilityFunctionObjects);
+        region        "neutroRegion";
+        writeControl  writeTime;
+
+        codeWrite
+        #{
+            Info<< "Calculating reaction rates:\n" << endl;
+
+            const scalarField& v = mesh().V();
+
+            scalar energyGroups = readScalar(lookupObject<IOdictionary>("nuclearData").lookup("energyGroups"));
+
+            // Info<< "All energy groups = " << energyGroups << endl;
+
+            // for(int i=0; i<energyGroups; i++)
+            for(int i=(energyGroups-1); i>=0; i--)
+            {
+                Info<< "GeN-Foam energy group = " << i << endl;
+
+                // This takes into account that GeN-Foam considers energy groups fthe other way around.
+                int group = (energyGroups - 1) - i;
+                Info<< "Actual energy group = " << group << endl;
+
+                // Read flux
+                std::string flux = "flux" + std::to_string(i);
+                volScalarField fluxI = mesh().lookupObject<volScalarField>(flux);
+
+                // Fission rate
+
+                std::string nuSigmaE = "nuSigmaEff" + std::to_string(i);
+                volScalarField nuSigmaEI = mesh().lookupObject<volScalarField>(nuSigmaE);
+
+                std::string fissionRateI = "fissionRate" + std::to_string(i);
+                volScalarField fissionRate
+                (
+                    IOobject
+                    (
+                        fissionRateI,
+                        mesh().time().timeName(),
+                        fluxI.mesh(),
+                        IOobject::NO_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    nuSigmaEI*fluxI
+                );
+                fissionRate.write();
+             
+                scalar intFissionRate = gSum(fissionRate*v);
+                Info<< "Integral Fission rate for Group" << group << " = " << intFissionRate << endl;
+    
+
+                // Dissaperance rate
+
+                std::string sigmaRemoval = "sigmaRemoval" + std::to_string(i);
+                volScalarField sigmaRemovalI = mesh().lookupObject<volScalarField>(sigmaRemoval);
+
+                std::string disappRateI = "disappRate" + std::to_string(i);
+                volScalarField disappRate
+                (
+                    IOobject
+                    (
+                        disappRateI,
+                        mesh().time().timeName(),
+                        fluxI.mesh(),
+                        IOobject::NO_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    sigmaRemovalI*fluxI
+                );
+                disappRate.write();
+    
+                scalar intDisappRate = gSum(disappRate*v);
+                Info<< "Integral Dissaperance rate for Group" << group << " = " << intDisappRate << endl;
+
+                // Scattering rate
+
+                std::string scatterRateI = "scatterRate" + std::to_string(i);
+                volScalarField scatterRateOne
+                (
+                    IOobject
+                    (
+                        scatterRateI,
+                        mesh().time().timeName(),
+                        fluxI.mesh(),
+                        IOobject::NO_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    mesh(),
+                    dimensionedScalar("", dimless/dimVol/dimTime, 0.0)
+                );
+                
+                for(int j=0; j<energyGroups; j++)
+                {
+                    std::string sigmaFromTo = "sigmaFromToP0_" + std::to_string(j) +"_"+ std::to_string(i);
+                    volScalarField sigmaFromJToI = mesh().lookupObject<volScalarField>(sigmaFromTo);
+    
+                    std::string scatterRateJI = "scatterRate" + std::to_string(j) + std::to_string(i);
+                    volScalarField scatterRate
+                    (
+                        IOobject
+                        (
+                            scatterRateJI,
+                            mesh().time().timeName(),
+                            fluxI.mesh(),
+                            IOobject::NO_READ,
+                            IOobject::AUTO_WRITE
+                        ),
+                        sigmaFromJToI*fluxI
+                    );
+                    
+                    scatterRate.write();
+                    scatterRateOne += scatterRate;
+                    
+                    // scalar intScatterRate = gSum(scatterRate*v);
+                    // Info<< "Integral Scattering from Group " << j << " into Group " << i << " = "<< intScatterRate << endl;
+                }
+        
+                scatterRateOne.write();
+                
+                scalar intScatterRateOne = gSum(scatterRateOne*v);
+                Info<< "Integral Scattering rate within Group" << group << " = " << intScatterRateOne << endl;
+
+            }
+        #};
+    }
+
+}
+
+// ************************************************************************* //

@@ -1,0 +1,81 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2412                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    object          fvSolution;
+}
+
+solvers
+{
+    p_rgh
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-06;
+        relTol          0.001;
+        minIter         1;
+    }
+    p_rghFinal
+    {
+        $p_rgh;
+        relTol          0.0;
+    }
+
+    "(U|k|epsilon|omega|s)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-06;
+        relTol          0.01;
+        minIter         1;
+    }
+    "(U|k|epsilon|omega|s)Final"
+    {
+        $U;
+        relTol          0.0;
+    }
+
+    "(e.*|h.*)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-07;
+        relTol          0;
+        minIter         1;
+    }
+}
+
+PIMPLE
+{
+    nCorrectors                 1;
+    nOuterCorrectors            1;
+    nNonOrthogonalCorrectors    2;
+    solveEnergy                 false;
+    solveFluidMechanics         false;
+    correctUntilConvergence     false;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        "k.*"           0.9;
+        "omega.*"       0.9;
+        "U.*"           0.9;
+        "s.*"           0.9;
+        "p_rgh"         0.9;
+        "e.*|h.*"       0.9;
+    }
+}
+
+
+// ************************************************************************* //

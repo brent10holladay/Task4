@@ -1,0 +1,2 @@
+#!/bin/bash
+rm -rf dynamicCode postProcessing *00 *50 50
