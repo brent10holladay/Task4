@@ -2,3 +2,15 @@ Serpent/
 FiniteCase/constant/fluidRegion/polymesh/
 FiniteCase/constant/neutroRegion/polymesh/
 
+FiniteCase/constant/fluidRegion/polyMesh/boundary
+FiniteCase/constant/fluidRegion/polyMesh/cellZones
+FiniteCase/constant/fluidRegion/polyMesh/faces
+FiniteCase/constant/fluidRegion/polyMesh/neighbour
+FiniteCase/constant/fluidRegion/polyMesh/owner
+FiniteCase/constant/fluidRegion/polyMesh/points
+FiniteCase/constant/neutroRegion/polyMesh/boundary
+FiniteCase/constant/neutroRegion/polyMesh/cellZones
+FiniteCase/constant/neutroRegion/polyMesh/faces
+FiniteCase/constant/neutroRegion/polyMesh/neighbour
+FiniteCase/constant/neutroRegion/polyMesh/owner
+FiniteCase/constant/neutroRegion/polyMesh/points
