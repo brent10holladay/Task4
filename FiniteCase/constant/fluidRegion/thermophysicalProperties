@@ -1,0 +1,108 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2112                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluidRegion";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Salt density (@ 911.15 K)
+// rho = 2.3275 g/cc
+// Source: IRPhEP, 2021 Section 1.1.3 / Fratoni, 2020 Table 4.4
+
+// Dynamic viscosity (mu) [Pa*s]
+// mu = 0.008 Pa*s
+// Kinematic viscosity (nu) [J*s/kg]
+// nu = 3.437e-06
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          hConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       43.55;
+    }
+    thermodynamics
+    {
+        Cp              1982.4;
+        Hf              0;
+    }
+    transport
+    {
+        mu              8e-03;
+        Pr              10.65;
+    }
+    equationOfState
+    {
+        rho             2327.5;
+        T0              911;
+    }
+}
+
+// ************************************************************************* //
+
+
+// Salt
+// Density
+// Source: Fratoni, 2020
+// 2.3275 g/cc (@ 911.15 K), 2.3223 g/cc (@ 922 K)
+// rho(T) = 2764.18 - 0.4792627 * T[K]
+// Dynamic viscosity (mu) [Pa*s]
+// mu = 0.008 Pa*s
+// mu(T) = 0.12494 - 2.258e-4 * T[K] + 1.0597e-7 * T^2[K]
+// Specific heat
+// Cp = 1982.4 J/kg K
+// Prandtl number
+// Pr = 10.65;
+// thermoType
+// {
+//     type            heRhoThermo;
+//     mixture         pureMixture;
+//     transport       polynomial;
+//     thermo          hPolynomial;
+//     equationOfState icoPolynomial;
+//     specie          specie;
+//     energy          sensibleEnthalpy;
+// }
+// mixture
+// {
+//     specie
+//     {
+//         molWeight       43.55;
+//     }
+//     thermodynamics
+//     {
+//         CpCoeffs<8>     (1982.4 0 0 0 0 0 0 0);
+//         Hf              0;
+//         Sf              0;
+//     }
+//     transport
+//     {
+//         muCoeffs<8>     (0.12494 -2.258e-4 1.0597e-7 0 0 0 0 0);
+//         kappaCoeffs<8>  (1.0 0 0 0 0 0 0 0);
+//     }
+//     equationOfState
+//     {
+//         rhoCoeffs<8>    (2764.18 -0.47926 0 0 0 0 0 0);
+//     }
+// }
+// ************************************************************************* //

@@ -1,0 +1,2 @@
+#!/bin/bash
+rm -rf dynamicCode postProcessing processor* log.* [1-9]* [0-9]*.[0-9]*

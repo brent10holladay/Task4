@@ -1,0 +1,141 @@
+functions
+{
+	probes
+	{
+		enabled		 		false;
+	 	type				probes;
+	 	libs				(sampling);
+	 	name				probes;
+		region		 	 	fluidRegion;
+	 	writeControl		timeStep;
+	 	writeInterval   	100;
+	 	fields		  		(U T k omega nut);
+	 	interpolationScheme cell;
+	 	probeLocations
+	 	(
+	 		// Lower plenum
+	 		(0.0 0.0 0.1)
+	 		// Lower plenum - off centre
+	 		( 0.4  0.0  0.1)
+	 		(-0.4  0.0  0.1)
+	 		( 0.0  0.4  0.1)
+	 		( 0.0 -0.4  0.1)
+	 		// Upper plenum
+	 		(0.0 0.0 2.1)
+	 		// Upper plenum - off centre
+	 		( 0.6  0.0  2.1)
+	 		(-0.6  0.0  2.1)
+	 		( 0.0  0.6  2.1)
+	 		( 0.0 -0.6  2.1)
+	 	);
+	}
+
+	yPlus
+	{
+		enabled		 	false;
+		type			yPlus;
+		libs			(fieldFunctionObjects);
+		region		 	fluidRegion;
+		log			 	true;
+		writoToFile		false;
+		writeFields	 	false;
+		writeControl	timeStep;
+		writeInterval   100;
+	}
+
+	minMaxFluid
+	{
+		enabled		 	true;
+
+		type			fieldMinMax;
+		libs			(fieldFunctionObjects);
+		region			fluidRegion;
+		mode			magnitude;
+		fields		  	(U T);
+		writeFields		false;
+		writeControl	timeStep;
+		writeInterval   100;
+	}
+
+	minMaxGraphite
+	{
+		enabled		 	true;
+		type			fieldMinMax;
+		libs			(fieldFunctionObjects);
+		region			graphiteRegion;
+		mode			magnitude;
+		fields		  	(T);
+		writeFields		false;
+		writeControl	timeStep;
+		writeInterval   100;
+	}
+
+	minMaxNeutronics
+	{
+		enabled		 	true;
+		type			fieldMinMax;
+		libs			(fieldFunctionObjects);
+		region			neutroRegion;
+		mode			magnitude;
+		fields		  	(flu0 flux1);
+		writeFields		false;
+		writeControl	timeStep;
+		writeInterval   100;
+	}
+
+	totalPowerFluid
+	{
+		enabled		 	false;
+		type			volFieldValue;
+		libs			(fieldFunctionObjects);
+		fields 			(powerDensityNeutronics powerDensityNeutronicsToLiquid);
+		operation		volIntegrate;
+		region		 	fluidRegion;
+		log			 	true;
+		writoToFile		true;
+		writeFields	 	false;
+		writeControl	onEnd;
+	}
+
+	totalPowerSolid
+	{
+		enabled		 	false;
+		type			volFieldValue;
+		libs			(fieldFunctionObjects);
+		fields 			(Q);
+		operation		volIntegrate;
+		region		 	graphiteRegion;
+		log			 	true;
+		writoToFile		true;
+		writeFields	 	false;
+		writeControl	onEnd;
+	}
+
+	inletVelocity
+	{
+		enabled			false;
+		type			surfaceFieldValue;
+		libs			(fieldFunctionObjects);
+		region 			fluidRegion;
+		fields		  	(U);
+		operation		areaAverage;
+		regionType	  	patch;
+		name			inlet;
+		writeFields	 	false;
+		writeControl	onEnd;
+	}
+
+	inletMassFlow
+	{
+		enabled		 	false;
+		type			surfaceFieldValue;
+		libs			(fieldFunctionObjects);
+		operation	   	areaIntegrate;
+		region		  	fluidRegion;
+		regionType	  	patch;
+		name			inlet;
+		fields		  	(alphaRhoMagU);
+		writeFields	 	false;
+		writeControl	onEnd;
+	}
+}
